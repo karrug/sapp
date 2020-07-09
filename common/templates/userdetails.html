@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Title</title>
+    <style type="text/css">
+      body {
+        margin: 40px auto;
+        max-width: 650px;
+        line-height: 1.6;
+        font-size: 18px;
+        color: #444;
+        padding: 0 10px;
+        overflow-y: scroll;
+      }
+      h1, h2, h3 {
+        line-height: 1.2
+      }
+      a {
+        text-decoration: none;
+      }
+      header {
+        margin-bottom: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Phonenumber</th>
+      </tr>
+      <tr>
+        <td><a href="{% url 'user_details' request.user.pk %}">{{ request.user.name }}</a></td>
+        <td>{{ request.user.email }}</td>
+        <td>{{ request.user.phone_number }}</td>
+      </tr>
+    </table>
+  </body>
+</html>
