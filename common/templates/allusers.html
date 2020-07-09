@@ -31,12 +31,14 @@
         <th>Name</th>
         <th>Email</th>
         <th>Phonenumber</th>
+        <th>Meta</th>
       </tr>
       {% for u in users %}
       <tr>
         <td><a href="{% url 'user_details' u.pk %}">{{ u.name }}</a></td>
         <td>{{ u.email }}</td>
         <td>{{ u.phone_number }}</td>
+        <td>{{ u.meta }}</td>
       </tr>
       {% endfor %}
     </table>

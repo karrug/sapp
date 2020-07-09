@@ -1,5 +1,8 @@
 import uuid
+import os
+import hashlib
 from urllib.parse import parse_qs, quote, urlencode
+import requests
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
@@ -15,6 +18,7 @@ def index(request):
 
 
 def signup(request):
+    next = request.GET.get('next', reverse('index'))
     if request.POST:
         name = request.POST['name']
         email = request.POST['email']
@@ -22,9 +26,11 @@ def signup(request):
         password = request.POST['password']
         username = uuid.uuid4().hex
         print(phone_number, password)
-        User.objects.create_user(name=name, email=email, phone_number=phone_number, username=username, password=password)
-        return HttpResponse('ok')
-    return render(request, 'signup.html')
+        u = User.objects.create_user(name=name, email=email, phone_number=phone_number, username=username, password=password)
+        login(request, u)
+        url = request.GET.get('next', reverse('index'))
+        return HttpResponseRedirect(url)
+    return render(request, 'signup.html', {'next': next})
 
 
 def signin(request):
@@ -84,7 +90,7 @@ def signout(request):
 
 
 def auth(request):
-    qnext = quote(request.GET.get("next", "/"), safe="")
+    qnext = quote(reverse('index'), safe="")
     url = "%s?next=%s" % (reverse("op_auth"), qnext)
     return HttpResponseRedirect(url)
 
@@ -97,13 +103,40 @@ def op_auth(request):
     url = "%s?client_id=%s&redirect_uri=%s&state=%s&scope=%s" % (
         'https://github.com/login/oauth/authorize',
         '9856aaffaf08603a0f4e',
-        'http://149.56.24.69:8888/auth/complete',
+        'http://149.56.24.69:9988/auth/complete',
         qstate,
-        "user%3Aemail",
+        "user:email",
     )
     return HttpResponseRedirect(url)
 
 
 def complete_op_auth(request):
-    print(request.META)
+    print(request.GET)
+    code = request.GET['code']
+    state = request.GET["state"]
+    h = {"content-type": "application/x-www-form-urlencoded", 'Accept': 'application/json'}
+    d = {
+        "client_id": '9856aaffaf08603a0f4e',
+        "client_secret": '47c8f7dd0daa98690d4cc967121d651e50c8d5f2',
+        "code": code,
+        "redirect_uri": 'http://149.56.24.69:9988/auth/complete',
+        "state": state,
+    }
+    r = requests.post('https://github.com/login/oauth/access_token', headers=h, data=d)
+    t = r.json()['access_token']
+
+    h = {'Authorization': 'token %s' % t, 'Accept': 'application/json'}
+    r = requests.get('https://api.github.com/user', headers=h)
+    r = r.json()
+    try:
+        u = User.objects.get(email=r['email'])
+    except User.DoesNotExist:
+        url = '%s?next=%s' % (reverse('signup'), quote(reverse(auth), safe=""))
+        print(url)
+        return HttpResponseRedirect(url)
+    else:
+        d = {'github': r}
+        u.meta.update(d)
+        u.save()
+        login(request, u)
     return HttpResponseRedirect(reverse('index'))

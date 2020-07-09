@@ -26,7 +26,7 @@
     </style>
   </head>
   <body>
-    <form method='post' action="{% url 'signup' %}">
+    <form method='post' action="{% url 'signup' %}?next={{ next }}">
       {% csrf_token %}
       <label for="name">Name:</label><br>
       <input type="text" id="name" name="name" value="" required><br>
